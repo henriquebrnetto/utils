@@ -1,6 +1,7 @@
-"""Database utilities library.
+"""Utilities library.
 
 Provides database connection management and CRUD operations for SQLModel objects.
+The FastAPI router lives in utils.api and is optional.
 """
 
 # Connection utilities
