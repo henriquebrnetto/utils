@@ -8,12 +8,12 @@ dependencies = [
     "sqlalchemy>=2.0.0",
     "psycopg2-binary>=2.9.0",
     "python-dotenv",
-    "mysql-connector-python"
+    "mysql-connector-python",
 ]
 
 [project.optional-dependencies]
 api = [
-    "fastapi>=0.110.0",
+    "fastapi[standard],
 ]
 
 [build-system]
