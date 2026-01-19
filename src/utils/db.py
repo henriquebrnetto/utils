@@ -5,6 +5,8 @@ from typing import Any, Generator
 
 from sqlmodel import SQLModel, Session, create_engine
 from sqlalchemy import Engine
+from dotenv import load_dotenv
+load_dotenv()
 
 # Default to PostgreSQL, fallback to SQLite for local development
 DATABASE_URL = os.environ.get(
