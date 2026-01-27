@@ -13,7 +13,7 @@ dependencies = [
 
 [project.optional-dependencies]
 api = [
-    "fastapi[standard],
+    "fastapi[standard]
 ]
 
 [build-system]
