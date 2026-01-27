@@ -213,38 +213,25 @@ def get_by_id(session: Session, obj: Any, id: Union[int, Tuple[int, int]]) -> Op
 
 
 @db_error
-def save(session: Session, new_obj: Any) -> Any:
-    """Save an object to the database.
+def save(session: Session, new_obj: Any | List[Any]) -> Any | List[Any]:
+    """Save one or more objects to the database.
     
     Args:
         session: Database session
-        new_obj: Object to save
+        new_obj: Object(s) to save
         
     Returns:
-        Saved object with ID populated
+        Saved object(s) with ID populated
     """
-    session.add(new_obj)
-    session.flush()
-    session.refresh(new_obj)
-    return new_obj
+    if not isinstance(new_obj, list):
+        new_obj = [new_obj]
 
-
-@db_error
-def save_all(session: Session, new_objs: List[Any]) -> List[Any]:
-    """Save multiple objects to the database.
-    
-    Args:
-        session: Database session
-        new_objs: List of objects to save
-        
-    Returns:
-        List of saved objects with IDs populated
-    """
-    session.add_all(new_objs)
-    for obj in new_objs:
+    session.add_all(new_obj)
+    for obj in new_obj:
         session.flush()
         session.refresh(obj)
-    return new_objs
+        
+    return new_obj if len(new_obj) > 1 else new_obj[0]
 
 
 @db_error
