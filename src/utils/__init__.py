@@ -31,7 +31,6 @@ from .db_utils import (
     get,
     get_by_id,
     save,
-    save_all,
     delete,
     update,
     get_or_create,
