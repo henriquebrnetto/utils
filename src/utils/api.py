@@ -30,7 +30,7 @@ def make_crud_router(
     router = APIRouter(prefix=prefix, tags=tags)
 
     # GET ALL
-    @router.get("/", response_model=List[read_schema])
+    @router.get("", response_model=List[read_schema])
     def list_items(request: Request, session: Session = Depends(get_session)):
         _meta = {"limit", "offset", "order_by"}
         filters = {k: v for k, v in request.query_params.items()
