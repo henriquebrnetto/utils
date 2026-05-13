@@ -45,7 +45,7 @@ def make_crud_router(
         return get_by_id(session, model, id)
 
     # CREATE
-    @router.post("/", response_model=read_schema, status_code=status.HTTP_201_CREATED)
+    @router.post("", response_model=read_schema, status_code=status.HTTP_201_CREATED)
     @db_commit
     def create_item(payload: create_schema, session: Session = Depends(get_session)):
         return save(session, model(**payload.model_dump()))
