@@ -1,6 +1,6 @@
 from typing import Any, List, Optional
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Request, status
 from sqlmodel import Session
 
 from .db import get_session
@@ -31,8 +31,11 @@ def make_crud_router(
 
     # GET ALL
     @router.get("/", response_model=List[read_schema])
-    def list_items(session: Session = Depends(get_session)):
-        return get(session, model)
+    def list_items(request: Request, session: Session = Depends(get_session)):
+        _meta = {"limit", "offset", "order_by"}
+        filters = {k: v for k, v in request.query_params.items()
+                   if k not in _meta and hasattr(model, k)} or None
+        return get(session, model, filters=filters)
 
     # GET BY ID
     @router.get("/{id}/{id2}", response_model=read_schema)
