@@ -1,3 +1,5 @@
+"""FastAPI CRUD router factory."""
+import textwrap
 from typing import Any, List, Optional
 
 from fastapi import APIRouter, Depends, Request, status
@@ -6,26 +8,23 @@ from sqlmodel import Session
 from .db import get_session
 from .db_utils import db_commit, delete, get, get_by_id, save, update
 
+
 def make_crud_router(
     model: Any,
     create_schema: Any,
     read_schema: Any,
     update_schema: Any,
     prefix: str,
-    tags: Optional[List[str]] = None
+    tags: Optional[List[str]] = None,
+    pk_fields: Optional[List[str]] = None,
 ) -> APIRouter:
-    """
-    Create a CRUD router for a given SQLModel.
-    Commits changes using @db_commit decorator.
-    Inherits error handling from @db_error decorator.
+    """Create a CRUD router for a given SQLModel.
 
     Args:
-        model (Any): The SQLModel class to create the router for.
-        create_schema (Any): The Pydantic schema for creating new instances.
-        read_schema (Any): The Pydantic schema for reading instances.
-
-    Returns:
-        APIRouter: The FastAPI router with CRUD endpoints.
+        pk_fields: When provided with 2 field names (e.g. ["id_sensor_model",
+                   "id_variable"]), the DELETE route accepts both as path params
+                   and passes a tuple to db_utils.delete(). Omit for the default
+                   single-integer PK behaviour.
     """
     router = APIRouter(prefix=prefix, tags=tags)
 
@@ -38,10 +37,8 @@ def make_crud_router(
         return get(session, model, filters=filters)
 
     # GET BY ID
-    @router.get("/{id}/{id2}", response_model=read_schema)
-    def read_item(id: int, id2: Optional[int] = None, session: Session = Depends(get_session)):
-        if id2 is not None:
-            return get_by_id(session, model, (id, id2))
+    @router.get("/{id}", response_model=read_schema)
+    def read_item(id: int, session: Session = Depends(get_session)):
         return get_by_id(session, model, id)
 
     # CREATE
@@ -56,10 +53,37 @@ def make_crud_router(
     def update_item(id: int, payload: update_schema, session: Session = Depends(get_session)):
         return update(session, model, id, payload)
 
-    # DELETE
-    @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-    @db_commit
-    def delete_item(id: int, session: Session = Depends(get_session)):
-        return delete(session, model, id)
-    
+    # DELETE — composite PK or single PK
+    if pk_fields and len(pk_fields) == 2:
+        pk1, pk2 = pk_fields
+        _globs: dict = {
+            "Session": Session,
+            "Depends": Depends,
+            "get_session": get_session,
+            "db_commit": db_commit,
+            "delete": delete,
+            "_model": model,
+        }
+        exec(
+            textwrap.dedent(f"""
+                @db_commit
+                def _delete_composite(
+                    {pk1}: int,
+                    {pk2}: int,
+                    session: Session = Depends(get_session),
+                ):
+                    return delete(session, _model, ({pk1}, {pk2}))
+            """),
+            _globs,
+        )
+        router.delete(
+            f"/{{{pk1}}}/{{{pk2}}}",
+            status_code=status.HTTP_204_NO_CONTENT,
+        )(_globs["_delete_composite"])
+    else:
+        @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+        @db_commit
+        def delete_item(id: int, session: Session = Depends(get_session)):
+            return delete(session, model, id)
+
     return router
