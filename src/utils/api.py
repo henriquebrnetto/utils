@@ -33,8 +33,6 @@ def make_crud_router(
     prefix: str,
     tags: Optional[List[str]] = None,
     pk_fields: Optional[List[str]] = None,
-    tags: Optional[List[str]] = None,
-    pk_fields: Optional[List[str]] = None,
 ) -> APIRouter:
     """
     Create a CRUD router for a given SQLModel.
