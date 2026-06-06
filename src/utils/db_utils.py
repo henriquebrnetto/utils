@@ -167,17 +167,19 @@ def get(
     obj: Any,
     filters: Optional[Dict[str, Any]] = None,
     order_by: Optional[List[str]] = None,
-    one_or_none: bool = False
+    one_or_none: bool = False,
+    limit: Optional[int] = None,
 ) -> Optional[Any]:
     """Get objects from database.
-    
+
     Args:
         session: Database session
         obj: SQLModel class to query
         filters: Optional filter dictionary
         order_by: Optional list of fields to order by
         one_or_none: If True, return single result or None
-        
+        limit: Optional maximum number of results to return
+
     Returns:
         List of objects, single object, or None
     """
@@ -193,7 +195,10 @@ def get(
 
     if order_by:
         stmt = _order_by(order_by, obj, stmt)
-    
+
+    if limit is not None:
+        stmt = stmt.limit(limit)
+
     return session.exec(stmt).one_or_none() if one_or_none else session.exec(stmt).all()
 
 
