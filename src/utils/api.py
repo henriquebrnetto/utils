@@ -33,6 +33,8 @@ def make_crud_router(
     prefix: str,
     tags: Optional[List[str]] = None,
     pk_fields: Optional[List[str]] = None,
+    tags: Optional[List[str]] = None,
+    pk_fields: Optional[List[str]] = None,
 ) -> APIRouter:
     """
     Create a CRUD router for a given SQLModel.
@@ -105,10 +107,37 @@ def make_crud_router(
     def update_item(id: int, payload: update_schema, session: Session = Depends(get_session)):
         return update(session, model, id, payload)
 
-    # DELETE
-    @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-    @db_commit
-    def delete_item(id: int, session: Session = Depends(get_session)):
-        return delete(session, model, id)
-    
+    # DELETE — composite PK or single PK
+    if pk_fields and len(pk_fields) == 2:
+        pk1, pk2 = pk_fields
+        _globs: dict = {
+            "Session": Session,
+            "Depends": Depends,
+            "get_session": get_session,
+            "db_commit": db_commit,
+            "delete": delete,
+            "_model": model,
+        }
+        exec(
+            textwrap.dedent(f"""
+                @db_commit
+                def _delete_composite(
+                    {pk1}: int,
+                    {pk2}: int,
+                    session: Session = Depends(get_session),
+                ):
+                    return delete(session, _model, ({pk1}, {pk2}))
+            """),
+            _globs,
+        )
+        router.delete(
+            f"/{{{pk1}}}/{{{pk2}}}",
+            status_code=status.HTTP_204_NO_CONTENT,
+        )(_globs["_delete_composite"])
+    else:
+        @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+        @db_commit
+        def delete_item(id: int, session: Session = Depends(get_session)):
+            return delete(session, model, id)
+
     return router
